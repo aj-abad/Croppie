@@ -5,115 +5,196 @@
  * Version: 2.6.5
  *************************/
 
-const cssPrefixes = ['Webkit', 'Moz', 'ms'];
-    const emptyStyles = typeof document !== 'undefined' ? document.createElement('div').style : {};
-    const EXIF_NORM = [1, 8, 3, 6];
-    const EXIF_FLIP = [2, 7, 4, 5];
-    let CSS_TRANS_ORG;
-    let CSS_TRANSFORM;
-    let CSS_USERSELECT;
-
-    const vendorPrefix = (prop) => {
-        if (prop in emptyStyles) {
-            return prop;
-        }
-
-        const capProp = prop[0].toUpperCase() + prop.slice(1);
-        let i = cssPrefixes.length;
-
-        while (i--) {
-            prop = cssPrefixes[i] + capProp;
-            if (prop in emptyStyles) {
-                return prop;
-            }
-        }
+// Type definitions
+interface CroppieOptions {
+    viewport?: {
+        width?: number;
+        height?: number;
+        type?: 'square' | 'circle';
     };
-
-    CSS_TRANSFORM = vendorPrefix('transform');
-    CSS_TRANS_ORG = vendorPrefix('transformOrigin');
-    CSS_USERSELECT = vendorPrefix('userSelect');
-
-    const getExifOffset = (ornt, rotate) => {
-        const arr = EXIF_NORM.indexOf(ornt) > -1 ? EXIF_NORM : EXIF_FLIP;
-        const index = arr.indexOf(ornt);
-        const offset = (rotate / 90) % arr.length; // 180 = 2%4 = 2 shift exif by 2 indexes
-
-        return arr[(arr.length + index + (offset % arr.length)) % arr.length];
+    boundary?: {
+        width?: number;
+        height?: number;
     };
+    orientationControls?: {
+        enabled?: boolean;
+        leftClass?: string;
+        rightClass?: string;
+    };
+    resizeControls?: {
+        width?: boolean;
+        height?: boolean;
+    };
+    customClass?: string;
+    showZoomer?: boolean;
+    enableZoom?: boolean;
+    enableResize?: boolean;
+    mouseWheelZoom?: boolean | 'ctrl';
+    enableExif?: boolean;
+    enforceBoundary?: boolean;
+    enableOrientation?: boolean;
+    enableKeyMovement?: boolean;
+    useCanvas?: boolean;
+    url?: string;
+    points?: number[];
+    zoom?: number;
+    orientation?: number;
+    relative?: boolean;
+    minZoom?: number;
+    maxZoom?: number;
+    update?: (data: CroppieResult) => void;
+}
 
-    // Credits to : Andrew Dupont - http://andrewdupont.net/2009/08/28/deep-extending-objects-in-javascript/
-    const deepExtend = (destination = {}, source) => {
-        for (const property in source) {
-            if (source[property] && source[property].constructor && source[property].constructor === Object) {
-                destination[property] = destination[property] || {};
-                deepExtend(destination[property], source[property]);
-            } else {
-                destination[property] = source[property];
-            }
+interface CroppieBindOptions {
+    url?: string;
+    points?: number[];
+    zoom?: number;
+    orientation?: number;
+}
+
+interface CroppieResult {
+    points: string[];
+    zoom: number;
+    orientation: number;
+}
+
+interface CroppieResultOptions {
+    type?: 'base64' | 'html' | 'blob' | 'rawcanvas' | 'canvas' | 'points';
+    size?: 'viewport' | 'original' | { width?: number; height?: number };
+    format?: 'jpeg' | 'png' | 'webp';
+    quality?: number;
+    circle?: boolean;
+    backgroundColor?: string;
+}
+
+interface CroppieElements {
+    boundary: HTMLElement;
+    viewport: HTMLElement;
+    img: HTMLImageElement;
+    overlay: HTMLElement;
+    preview: HTMLElement | HTMLCanvasElement;
+    canvas?: HTMLCanvasElement;
+    zoomer?: HTMLInputElement;
+    zoomerWrap?: HTMLElement;
+    orientationBtnLeft?: HTMLButtonElement;
+    orientationBtnRight?: HTMLButtonElement;
+}
+
+interface CroppieData {
+    bound?: boolean;
+    url?: string;
+    boundZoom?: number | null;
+    points?: number[];
+    orientation?: number;
+}
+
+const cssPrefixes: string[] = ['Webkit', 'Moz', 'ms'];
+const emptyStyles: CSSStyleDeclaration = typeof document !== 'undefined' ? document.createElement('div').style : {} as CSSStyleDeclaration;
+const EXIF_NORM: number[] = [1, 8, 3, 6];
+const EXIF_FLIP: number[] = [2, 7, 4, 5];
+let CSS_TRANS_ORG: string | undefined;
+let CSS_TRANSFORM: string | undefined;
+let CSS_USERSELECT: string | undefined;
+
+const vendorPrefix = (prop: string): string | undefined => {
+    if (prop in emptyStyles) {
+        return prop;
+    }
+
+    const capProp = prop[0].toUpperCase() + prop.slice(1);
+    let i = cssPrefixes.length;
+
+    while (i--) {
+        const prefixedProp = cssPrefixes[i] + capProp;
+        if (prefixedProp in emptyStyles) {
+            return prefixedProp;
         }
-        return destination;
-    };
+    }
+    return undefined;
+};
 
-    const clone = (object) => deepExtend({}, object);
+CSS_TRANSFORM = vendorPrefix('transform');
+CSS_TRANS_ORG = vendorPrefix('transformOrigin');
+CSS_USERSELECT = vendorPrefix('userSelect');
 
-    const debounce = (func, wait, immediate) => {
-        let timeout;
-        return function () {
-            const context = this;
-            const args = arguments;
-            const later = () => {
-                timeout = null;
-                if (!immediate) func.apply(context, args);
-            };
-            const callNow = immediate && !timeout;
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-            if (callNow) func.apply(context, args);
+const getExifOffset = (ornt: number, rotate: number): number => {
+    const arr = EXIF_NORM.indexOf(ornt) > -1 ? EXIF_NORM : EXIF_FLIP;
+    const index = arr.indexOf(ornt);
+    const offset = (rotate / 90) % arr.length;
+
+    return arr[(arr.length + index + (offset % arr.length)) % arr.length];
+};
+
+const deepExtend = (destination: any = {}, source: any): any => {
+    for (const property in source) {
+        if (source[property] && source[property].constructor && source[property].constructor === Object) {
+            destination[property] = destination[property] || {};
+            deepExtend(destination[property], source[property]);
+        } else {
+            destination[property] = source[property];
+        }
+    }
+    return destination;
+};
+
+const clone = <T>(object: T): T => deepExtend({}, object);
+
+const debounce = <F extends (...args: any[]) => any>(func: F, wait: number, immediate?: boolean) => {
+    let timeout: ReturnType<typeof setTimeout> | null;
+    return function (this: any, ...args: Parameters<F>) {
+        const context = this;
+        const later = () => {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
         };
+        const callNow = immediate && !timeout;
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
     };
+};
 
-    const dispatchChange = (element) => {
-        const evt = document.createEvent("HTMLEvents");
-        evt.initEvent("change", false, true);
-        element.dispatchEvent(evt);
-    };
+const dispatchChange = (element: HTMLElement): void => {
+    const evt = document.createEvent("HTMLEvents");
+    evt.initEvent("change", false, true);
+    element.dispatchEvent(evt);
+};
 
-    //http://jsperf.com/vanilla-css
-    const css = (el, styles, val) => {
-        if (typeof (styles) === 'string') {
-            const tmp = styles;
-            styles = {};
-            styles[tmp] = val;
-        }
+const css = (el: HTMLElement, styles: string | Record<string, string>, val?: string): void => {
+    if (typeof styles === 'string') {
+        const tmp = styles;
+        styles = {};
+        styles[tmp] = val!;
+    }
 
-        for (const prop in styles) {
-            el.style[prop] = styles[prop];
-        }
-    };
+    for (const prop in styles) {
+        (el.style as any)[prop] = styles[prop];
+    }
+};
 
-    const addClass = (el, c) => el.classList.add(c);
+const addClass = (el: HTMLElement, c: string): void => el.classList.add(c);
 
-    const removeClass = (el, c) => el.classList.remove(c);
+const removeClass = (el: HTMLElement, c: string): void => el.classList.remove(c);
 
-    const setAttributes = (el, attrs) => {
-        for (const key in attrs) {
-            el.setAttribute(key, attrs[key]);
-        }
-    };
+const setAttributes = (el: HTMLElement, attrs: Record<string, string>): void => {
+    for (const key in attrs) {
+        el.setAttribute(key, attrs[key]);
+    }
+};
 
-    const num = (v) => parseInt(v, 10);
+const num = (v: string | number): number => parseInt(v as string, 10);
 
-    /* Utilities */
-    const loadImage = (src, doExif) => {
-        if (!src) { throw 'Source image missing'; }
+/* Utilities */
+const loadImage = (src: string, doExif?: boolean): Promise<HTMLImageElement> => {
+    if (!src) { throw 'Source image missing'; }
 
-        const img = new Image();
-        img.style.opacity = '0';
-        return new Promise((resolve, reject) => {
-            const _resolve = () => {
-                img.style.opacity = '1';
-                setTimeout(() => resolve(img), 1);
-            };
+    const img = new Image();
+    img.style.opacity = '0';
+    return new Promise((resolve, reject) => {
+        const _resolve = () => {
+            img.style.opacity = '1';
+            setTimeout(() => resolve(img), 1);
+        };
 
             img.removeAttribute('crossOrigin');
             if (src.match(/^https?:\/\/|^\/\//)) {
@@ -133,90 +214,110 @@ const cssPrefixes = ['Webkit', 'Moz', 'ms'];
                 setTimeout(() => reject(ev), 1);
             };
             img.src = src;
-        });
-    };
+    });
+};
 
-    const naturalImageDimensions = (img, ornt) => {
-        let w = img.naturalWidth;
-        let h = img.naturalHeight;
-        const orient = ornt || getExifOrientation(img);
-        if (orient && orient >= 5) {
-            [w, h] = [h, w]; // swap using destructuring
+interface ImageDimensions {
+    width: number;
+    height: number;
+}
+
+const naturalImageDimensions = (img: HTMLImageElement, ornt?: number): ImageDimensions => {
+    let w = img.naturalWidth;
+    let h = img.naturalHeight;
+    const orient = ornt || getExifOrientation(img);
+    if (orient && orient >= 5) {
+        [w, h] = [h, w];
+    }
+    return { width: w, height: h };
+};
+
+/* CSS Transform Class */
+const TRANSLATE_OPTS: Record<string, { suffix: string }> = {
+    'translate3d': {
+        suffix: ', 0px'
+    },
+    'translate': {
+        suffix: ''
+    }
+};
+
+class Transform {
+    x: number;
+    y: number;
+    scale: number;
+
+    constructor(x: number | string, y: number | string, scale: number | string) {
+        this.x = parseFloat(x as string);
+        this.y = parseFloat(y as string);
+        this.scale = parseFloat(scale as string);
+    }
+
+    static parse(v: any): Transform {
+        if (v.style) {
+            return Transform.parse(v.style[CSS_TRANSFORM!]);
         }
-        return { width: w, height: h };
-    };
-
-    /* CSS Transform Class */
-    const TRANSLATE_OPTS = {
-        'translate3d': {
-            suffix: ', 0px'
-        },
-        'translate': {
-            suffix: ''
+        else if (v.indexOf('matrix') > -1 || v.indexOf('none') > -1) {
+            return Transform.fromMatrix(v);
         }
-    };
-
-    class Transform {
-        constructor(x, y, scale) {
-            this.x = parseFloat(x);
-            this.y = parseFloat(y);
-            this.scale = parseFloat(scale);
-        }
-
-        static parse(v) {
-            if (v.style) {
-                return Transform.parse(v.style[CSS_TRANSFORM]);
-            }
-            else if (v.indexOf('matrix') > -1 || v.indexOf('none') > -1) {
-                return Transform.fromMatrix(v);
-            }
-            else {
-                return Transform.fromString(v);
-            }
-        }
-
-        static fromMatrix(v) {
-            const vals = v.substring(7).split(',');
-            if (!vals.length || v === 'none') {
-                return new Transform(0, 0, 1);
-            }
-            return new Transform(num(vals[4]), num(vals[5]), parseFloat(vals[0]));
-        }
-
-        static fromString(v) {
-            const values = v.split(') ');
-            const translate = values[0].substring(Croppie.globals.translate.length + 1).split(',');
-            const scale = values.length > 1 ? values[1].substring(6) : 1;
-            const x = translate.length > 1 ? translate[0] : 0;
-            const y = translate.length > 1 ? translate[1] : 0;
-            return new Transform(x, y, scale);
-        }
-
-        toString() {
-            const suffix = TRANSLATE_OPTS[Croppie.globals.translate].suffix || '';
-            return `${Croppie.globals.translate}(${this.x}px, ${this.y}px${suffix}) scale(${this.scale})`;
+        else {
+            return Transform.fromString(v);
         }
     }
 
-    class TransformOrigin {
-        constructor(el) {
-            if (!el || !el.style[CSS_TRANS_ORG]) {
-                this.x = 0;
-                this.y = 0;
-                return;
-            }
-            const cssValues = el.style[CSS_TRANS_ORG].split(' ');
-            this.x = parseFloat(cssValues[0]);
-            this.y = parseFloat(cssValues[1]);
+    static fromMatrix(v: string): Transform {
+        const vals = v.substring(7).split(',');
+        if (!vals.length || v === 'none') {
+            return new Transform(0, 0, 1);
         }
-
-        toString() {
-            return `${this.x}px ${this.y}px`;
-        }
+        return new Transform(num(vals[4]), num(vals[5]), parseFloat(vals[0]));
     }
 
-    const getExifOrientation = (img) => {
-        return img.exifdata?.Orientation ? num(img.exifdata.Orientation) : 1;
+    static fromString(v: string): Transform {
+        const values = v.split(') ');
+        const translate = values[0].substring((Croppie as any).globals.translate.length + 1).split(',');
+        const scale = values.length > 1 ? values[1].substring(6) : '1';
+        const x = translate.length > 1 ? translate[0] : '0';
+        const y = translate.length > 1 ? translate[1] : '0';
+        return new Transform(x, y, scale);
+    }
+
+    toString(): string {
+        const suffix = TRANSLATE_OPTS[(Croppie as any).globals.translate]?.suffix || '';
+        return `${(Croppie as any).globals.translate}(${this.x}px, ${this.y}px${suffix}) scale(${this.scale})`;
+    }
+}
+
+class TransformOrigin {
+    x: number;
+    y: number;
+
+    constructor(el?: HTMLElement) {
+        if (!el || !el.style[CSS_TRANS_ORG!]) {
+            this.x = 0;
+            this.y = 0;
+            return;
+        }
+        const cssValues = el.style[CSS_TRANS_ORG!].split(' ');
+        this.x = parseFloat(cssValues[0]);
+        this.y = parseFloat(cssValues[1]);
+    }
+
+    toString(): string {
+        return `${this.x}px ${this.y}px`;
+    }
+}
+
+interface ExifData {
+    Orientation?: number;
+}
+
+interface ExifImage extends HTMLImageElement {
+    exifdata?: ExifData;
+}
+
+const getExifOrientation = (img: ExifImage): number => {
+    return img.exifdata?.Orientation ? num(img.exifdata.Orientation) : 1;
     };
 
     const drawCanvas = (canvas, img, orientation) => {
@@ -1382,49 +1483,19 @@ const cssPrefixes = ['Webkit', 'Moz', 'ms'];
         if (self.options.enableZoom) {
             self.element.removeChild(self.elements.zoomerWrap);
         }
-        delete self.elements;
-    }
+    delete self.elements;
+}
 
-    function Croppie(element, opts) {
-        if (element.className.indexOf('croppie-container') > -1) {
-            throw new Error("Croppie: Can't initialize croppie more than once");
-        }
-        this.element = element;
-        this.options = deepExtend(clone(Croppie.defaults), opts);
+class Croppie {
+    element: HTMLElement;
+    options: CroppieOptions;
+    elements!: CroppieElements;
+    data!: CroppieData;
+    _currentZoom!: number;
+    _originalImageWidth!: number;
+    _originalImageHeight!: number;
 
-        if (this.element.tagName.toLowerCase() === 'img') {
-            const origImage = this.element;
-            addClass(origImage, 'cr-original-image');
-            setAttributes(origImage, { 'aria-hidden': 'true', 'alt': '' });
-            const replacementDiv = document.createElement('div');
-            this.element.parentNode.appendChild(replacementDiv);
-            replacementDiv.appendChild(origImage);
-            this.element = replacementDiv;
-            this.options.url = this.options.url || origImage.src;
-        }
-
-        _create.call(this);
-        if (this.options.url) {
-            const bindOpts = {
-                url: this.options.url,
-                points: this.options.points
-            };
-            delete this.options['url'];
-            delete this.options['points'];
-            _bind.call(this, bindOpts);
-        }
-
-
-        this.options.relative = false
-
-
-
-        //here
-
-        this.options.minZoom = 0
-    }
-
-    Croppie.defaults = {
+    static defaults: CroppieOptions = {
         viewport: {
             width: 100,
             height: 100,
@@ -1452,48 +1523,86 @@ const cssPrefixes = ['Webkit', 'Moz', 'ms'];
         update: () => {}
     };
 
-    Croppie.globals = {
+    static globals = {
         translate: 'translate3d'
     };
 
-    deepExtend(Croppie.prototype, {
-        bind: function (options, cb) {
-            return _bind.call(this, options, cb);
-        },
-        get: function () {
-            const data = _get.call(this);
-            const points = data.points;
-            if (this.options.relative) {
-                points[0] /= this.elements.img.naturalWidth / 100;
-                points[1] /= this.elements.img.naturalHeight / 100;
-                points[2] /= this.elements.img.naturalWidth / 100;
-                points[3] /= this.elements.img.naturalHeight / 100;
-            }
-            return data;
-        },
-        result: function (type) {
-            return _result.call(this, type);
-        },
-        refresh: function () {
-            return _refresh.call(this);
-        },
-        setZoom: function (v) {
-            _setZoomerVal.call(this, v);
-            dispatchChange(this.elements.zoomer);
-        },
-        rotate: function (deg) {
-            _rotate.call(this, deg);
-        },
-        destroy: function () {
-            return _destroy.call(this);
+    constructor(element: HTMLElement, opts?: CroppieOptions) {
+        if (element.className.indexOf('croppie-container') > -1) {
+            throw new Error("Croppie: Can't initialize croppie more than once");
         }
-    });
+        this.element = element;
+        this.options = deepExtend(clone(Croppie.defaults), opts);
+
+        if (this.element.tagName.toLowerCase() === 'img') {
+            const origImage = this.element as HTMLImageElement;
+            addClass(origImage, 'cr-original-image');
+            setAttributes(origImage, { 'aria-hidden': 'true', 'alt': '' });
+            const replacementDiv = document.createElement('div');
+            this.element.parentNode!.appendChild(replacementDiv);
+            replacementDiv.appendChild(origImage);
+            this.element = replacementDiv;
+            this.options.url = this.options.url || origImage.src;
+        }
+
+        _create.call(this);
+        if (this.options.url) {
+            const bindOpts: CroppieBindOptions = {
+                url: this.options.url,
+                points: this.options.points
+            };
+            delete this.options['url'];
+            delete this.options['points'];
+            _bind.call(this, bindOpts);
+        }
+
+        this.options.relative = false;
+        this.options.minZoom = 0;
+    }
+
+    bind(options?: string | number[] | CroppieBindOptions, cb?: () => void): Promise<void> | null {
+        return _bind.call(this, options, cb);
+    }
+
+    get(): CroppieResult {
+        const data = _get.call(this);
+        const points = data.points;
+        if (this.options.relative) {
+            points[0] = (parseFloat(points[0]) / this.elements.img.naturalWidth * 100).toString();
+            points[1] = (parseFloat(points[1]) / this.elements.img.naturalHeight * 100).toString();
+            points[2] = (parseFloat(points[2]) / this.elements.img.naturalWidth * 100).toString();
+            points[3] = (parseFloat(points[3]) / this.elements.img.naturalHeight * 100).toString();
+        }
+        return data;
+    }
+
+    result(type?: string | CroppieResultOptions): Promise<string | HTMLElement | Blob | HTMLCanvasElement | string[]> {
+        return _result.call(this, type);
+    }
+
+    refresh(): void {
+        return _refresh.call(this);
+    }
+
+    setZoom(v: number): void {
+        _setZoomerVal.call(this, v);
+        dispatchChange(this.elements.zoomer!);
+    }
+
+    rotate(deg: number): void {
+        _rotate.call(this, deg);
+    }
+
+    destroy(): void {
+        return _destroy.call(this);
+    }
+}
 
 // Export for different module systems
 if (typeof module !== 'undefined' && module.exports) {
     // CommonJS
     module.exports = Croppie;
-} else if (typeof define === 'function' && define.amd) {
+} else if (typeof define === 'function' && (define as any).amd) {
     // AMD
     define([], function() { return Croppie; });
 } else {
