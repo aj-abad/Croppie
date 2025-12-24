@@ -4,20 +4,8 @@
  * Foliotek
  * Version: 2.6.5
  *************************/
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(factory);
-    } else if (typeof exports === 'object' && typeof exports.nodeName !== 'string') {
-        // CommonJS
-        module.exports = factory();
-    } else {
-        // Browser globals
-        root.Croppie = factory();
-    }
-}(typeof self !== 'undefined' ? self : this, () => {
 
-    const cssPrefixes = ['Webkit', 'Moz', 'ms'];
+const cssPrefixes = ['Webkit', 'Moz', 'ms'];
     const emptyStyles = typeof document !== 'undefined' ? document.createElement('div').style : {};
     const EXIF_NORM = [1, 8, 3, 6];
     const EXIF_FLIP = [2, 7, 4, 5];
@@ -1500,5 +1488,19 @@
             return _destroy.call(this);
         }
     });
-    return Croppie;
-}));
+
+// Export for different module systems
+if (typeof module !== 'undefined' && module.exports) {
+    // CommonJS
+    module.exports = Croppie;
+} else if (typeof define === 'function' && define.amd) {
+    // AMD
+    define([], function() { return Croppie; });
+} else {
+    // Browser global
+    if (typeof window !== 'undefined') {
+        window.Croppie = Croppie;
+    }
+}
+
+export default Croppie;

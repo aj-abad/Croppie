@@ -2,15 +2,26 @@
   "name": "croppie",
   "version": "2.6.5",
   "description": "A simple javascript image cropper",
-  "main": "croppie.js",
+  "main": "./dist/croppie.cjs",
+  "module": "./dist/croppie.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/croppie.mjs",
+      "require": "./dist/croppie.cjs"
+    },
+    "./dist/croppie.css": "./croppie.css"
+  },
+  "types": "./dist/croppie.d.ts",
   "devDependencies": {
     "gh-pages": "^0.11.0",
     "mocha": "2.4.5",
-    "uglify-js": "3.3.15"
+    "uglify-js": "3.3.15",
+    "vite": "^5.4.21"
   },
   "scripts": {
     "test": "mocha test/unit",
     "deploy": "node deploy.js",
+    "build": "vite build",
     "uglify": "uglifyjs croppie.js -c -m -r '$,require,exports' -o croppie.min.js"
   },
   "repository": {
@@ -35,6 +46,7 @@
   "files": [
     "croppie.css",
     "croppie.js",
-    "croppie.min.js"
+    "croppie.min.js",
+    "dist"
   ]
 }
