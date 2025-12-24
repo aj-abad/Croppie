@@ -88,34 +88,12 @@ interface CroppieData {
     orientation?: number;
 }
 
-const cssPrefixes: string[] = ['Webkit', 'Moz', 'ms'];
-const emptyStyles: CSSStyleDeclaration = typeof document !== 'undefined' ? document.createElement('div').style : {} as CSSStyleDeclaration;
 const EXIF_NORM: number[] = [1, 8, 3, 6];
 const EXIF_FLIP: number[] = [2, 7, 4, 5];
-let CSS_TRANS_ORG: string | undefined;
-let CSS_TRANSFORM: string | undefined;
-let CSS_USERSELECT: string | undefined;
 
-const vendorPrefix = (prop: string): string | undefined => {
-    if (prop in emptyStyles) {
-        return prop;
-    }
-
-    const capProp = prop[0].toUpperCase() + prop.slice(1);
-    let i = cssPrefixes.length;
-
-    while (i--) {
-        const prefixedProp = cssPrefixes[i] + capProp;
-        if (prefixedProp in emptyStyles) {
-            return prefixedProp;
-        }
-    }
-    return undefined;
-};
-
-CSS_TRANSFORM = vendorPrefix('transform');
-CSS_TRANS_ORG = vendorPrefix('transformOrigin');
-CSS_USERSELECT = vendorPrefix('userSelect');
+const CSS_TRANSFORM = 'transform';
+const CSS_TRANS_ORG = 'transformOrigin';
+const CSS_USERSELECT = 'userSelect';
 
 const getExifOffset = (ornt: number, rotate: number): number => {
     const arr = EXIF_NORM.indexOf(ornt) > -1 ? EXIF_NORM : EXIF_FLIP;
@@ -255,7 +233,7 @@ class Transform {
 
     static parse(v: any): Transform {
         if (v.style) {
-            return Transform.parse(v.style[CSS_TRANSFORM!]);
+            return Transform.parse(v.style[CSS_TRANSFORM]);
         }
         else if (v.indexOf('matrix') > -1 || v.indexOf('none') > -1) {
             return Transform.fromMatrix(v);
@@ -293,12 +271,12 @@ class TransformOrigin {
     y: number;
 
     constructor(el?: HTMLElement) {
-        if (!el || !el.style[CSS_TRANS_ORG!]) {
+        if (!el || !el.style[CSS_TRANS_ORG]) {
             this.x = 0;
             this.y = 0;
             return;
         }
-        const cssValues = el.style[CSS_TRANS_ORG!].split(' ');
+        const cssValues = el.style[CSS_TRANS_ORG].split(' ');
         this.x = parseFloat(cssValues[0]);
         this.y = parseFloat(cssValues[1]);
     }
@@ -392,6 +370,7 @@ const getExifOrientation = (img: ExifImage): number => {
         const boundary = self.elements.boundary = document.createElement('div');
         const viewport = self.elements.viewport = document.createElement('div');
         const img = self.elements.img = document.createElement('img');
+        img.setAttribute('crossOrigin', 'anonymous');
         const overlay = self.elements.overlay = document.createElement('div');
 
         if (self.options.useCanvas) {
@@ -701,7 +680,7 @@ const getExifOrientation = (img: ExifImage): number => {
         const origin = ui ? ui.origin : new TransformOrigin(self.elements.preview);
 
         const applyCss = () => {
-            const transCss = {};
+            const transCss: Record<string, string> = {};
             transCss[CSS_TRANSFORM] = transform.toString();
             transCss[CSS_TRANS_ORG] = origin.toString();
             css(self.elements.preview, transCss);
@@ -807,7 +786,7 @@ const getExifOrientation = (img: ExifImage): number => {
             transform.y -= adj.y;
         }
 
-        const newCss = {};
+        const newCss: Record<string, string> = {};
         newCss[CSS_TRANS_ORG] = `${center.x}px ${center.y}px`;
         newCss[CSS_TRANSFORM] = transform.toString();
         css(self.elements.preview, newCss);
@@ -877,7 +856,7 @@ const getExifOrientation = (img: ExifImage): number => {
 
         const keyMove = (movement) => {
             const [deltaX, deltaY] = movement;
-            const newCss = {};
+            const newCss: Record<string, string> = {};
 
             assignTransformCoordinates(deltaX, deltaY);
 
@@ -927,7 +906,7 @@ const getExifOrientation = (img: ExifImage): number => {
 
             const deltaX = pageX - originalX;
             const deltaY = pageY - originalY;
-            const newCss = {};
+            const newCss: Record<string, string> = {};
 
             if (ev.type === 'touchmove') {
                 if (ev.touches.length > 1) {
@@ -1016,7 +995,7 @@ const getExifOrientation = (img: ExifImage): number => {
     function _updatePropertiesFromImage() {
         const self = this;
         const initialZoom = 1;
-        const cssReset = {};
+        const cssReset: Record<string, string | number> = {};
         const img = self.elements.preview;
         let imgData;
         const transformReset = new Transform(0, 0, initialZoom);
@@ -1118,7 +1097,7 @@ const getExifOrientation = (img: ExifImage): number => {
         const originLeft = points[0];
         const transformTop = (-1 * points[1]) + vpOffset.top;
         const transformLeft = (-1 * points[0]) + vpOffset.left;
-        const newCss = {};
+        const newCss: Record<string, string> = {};
 
         newCss[CSS_TRANS_ORG] = `${originLeft}px ${originTop}px`;
         newCss[CSS_TRANSFORM] = new Transform(transformLeft, transformTop, scale).toString();
@@ -1239,6 +1218,7 @@ const getExifOrientation = (img: ExifImage): number => {
         const points = data.points;
         const div = document.createElement('div');
         const img = document.createElement('img');
+        img.setAttribute('crossOrigin', 'anonymous');
         const width = points[2] - points[0];
         const height = points[3] - points[1];
 

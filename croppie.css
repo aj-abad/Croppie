@@ -116,9 +116,6 @@
 .croppie-container .cr-image,
 .croppie-container .cr-overlay,
 .croppie-container .cr-viewport {
-    -webkit-transform: translateZ(0);
-    -moz-transform: translateZ(0);
-    -ms-transform: translateZ(0);
     transform: translateZ(0);
 }
 
@@ -129,9 +126,7 @@
 /*************************************/
 
 .cr-slider {
-    -webkit-appearance: none;
-/*removes default webkit styles*/
-	/*border: 1px solid white; *//*fix for FF unable to apply focus style bug */
+    appearance: none;
     width: 300px;
 /*required for proper track sizing in FF*/
     max-width: 100%;
@@ -149,7 +144,7 @@
 }
 
 .cr-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
+    appearance: none;
     border: none;
     height: 16px;
     width: 16px;
@@ -190,37 +185,6 @@ background: #ccc;
     outline-offset: -1px;
 }
 
-.cr-slider::-ms-track {
-    width: 100%;
-    height: 5px;
-    background: transparent;
-/*remove bg colour from the track, we'll use ms-fill-lower and ms-fill-upper instead */
-	border-color: transparent;/*leave room for the larger thumb to overflow with a transparent border */
-	border-width: 6px 0;
-	color: transparent;/*remove default tick marks*/
-}
-.cr-slider::-ms-fill-lower {
-	background: rgba(0, 0, 0, 0.5);
-	border-radius: 10px;
-}
-.cr-slider::-ms-fill-upper {
-	background: rgba(0, 0, 0, 0.5);
-	border-radius: 10px;
-}
-.cr-slider::-ms-thumb {
-	border: none;
-	height: 16px;
-	width: 16px;
-	border-radius: 50%;
-	background: #ddd;
-	margin-top:1px;
-}
-.cr-slider:focus::-ms-fill-lower {
-	background: rgba(0, 0, 0, 0.5);
-}
-.cr-slider:focus::-ms-fill-upper {
-	background: rgba(0, 0, 0, 0.5);
-}
 /*******************************************/
 
 /***********************************/
