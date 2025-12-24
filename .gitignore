@@ -1,5 +1,26 @@
+# IDE
 .idea/
-npm-debug.log
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
 node_modules/
 bower_components
+
+# Build output
+dist/
+*.min.js
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
 /nbproject/private/
