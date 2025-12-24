@@ -91,6 +91,10 @@
   border-radius: 50%;
 }
 
+.croppie-container .cr-vp-square {
+  border-radius: 1rem;
+}
+
 .croppie-container .cr-overlay {
   z-index: 1;
   position: absolute;
@@ -127,7 +131,7 @@
 
 .cr-slider {
   appearance: none;
-  width: 300px;
+  width: 100%;
   /*required for proper track sizing in FF*/
   max-width: 100%;
   padding-top: 8px;

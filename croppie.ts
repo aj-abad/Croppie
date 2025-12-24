@@ -1354,10 +1354,17 @@ function _get() {
   var self = this,
     imgData = self.elements.preview.getBoundingClientRect(),
     vpData = self.elements.viewport.getBoundingClientRect(),
-    x1 = vpData.left - imgData.left,
-    y1 = vpData.top - imgData.top,
-    x2 = x1 + vpData.width,
-    y2 = y1 + vpData.height,
+    // Use clientWidth/clientHeight to get viewport dimensions without border
+    vpContentWidth = self.elements.viewport.clientWidth,
+    vpContentHeight = self.elements.viewport.clientHeight,
+    // Calculate border offsets (getBoundingClientRect includes border, but crop should be content only)
+    borderLeft = (vpData.width - vpContentWidth) / 2,
+    borderTop = (vpData.height - vpContentHeight) / 2,
+    // Adjust coordinates to account for border
+    x1 = (vpData.left + borderLeft) - imgData.left,
+    y1 = (vpData.top + borderTop) - imgData.top,
+    x2 = x1 + vpContentWidth,
+    y2 = y1 + vpContentHeight,
     scale = self._currentZoom;
 
   if (scale === Infinity || isNaN(scale)) {
@@ -1395,12 +1402,15 @@ function _result(options) {
   const backgroundColor = opts.backgroundColor;
   const circle =
     typeof opts.circle === "boolean" ? opts.circle : self.options.viewport.type === "circle";
-  const vpRect = self.elements.viewport.getBoundingClientRect();
-  const ratio = vpRect.width / vpRect.height;
+  // Use clientWidth/clientHeight for ratio to exclude border
+  const vpContentWidth = self.elements.viewport.clientWidth;
+  const vpContentHeight = self.elements.viewport.clientHeight;
+  const ratio = vpContentWidth / vpContentHeight;
 
   if (size === "viewport") {
-    data.outputWidth = vpRect.width;
-    data.outputHeight = vpRect.height;
+    // Use content dimensions (already computed above, excludes border)
+    data.outputWidth = vpContentWidth;
+    data.outputHeight = vpContentHeight;
   } else if (typeof size === "object") {
     if (size.width && size.height) {
       data.outputWidth = size.width;
