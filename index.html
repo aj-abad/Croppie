@@ -50,16 +50,21 @@
         <section class="simple">
             <div class="section-header"><h2>The Basics</h2></div>
             <div class="container">
-                <pre class="language-html"><code class="language-html">&lt;div class="demo"&gt;&lt;/div&gt;
+                <pre class="language-html"><code class="language-html">&lt;div id="demo"&gt;&lt;/div&gt;
 &lt;script&gt;
-$('.demo').croppie({
-    url: 'demo/demo-1.jpg',
+var el = document.getElementById('demo');
+var croppie = new Croppie(el, {
+    viewport: { width: 100, height: 100 }
+});
+croppie.bind({
+    url: 'demo/demo-1.jpg'
 });
 &lt;/script&gt;
-&lt;!-- or even simpler --&gt;
-&lt;img class="my-image" src="demo/demo-1.jpg" /&gt;
+&lt;!-- or with an image element --&gt;
+&lt;img id="my-image" src="demo/demo-1.jpg" /&gt;
 &lt;script&gt;
-$('.my-image').croppie();
+var img = document.getElementById('my-image');
+var croppie = new Croppie(img);
 &lt;/script&gt;
 </code></pre>
             </div>
@@ -85,15 +90,12 @@ $('.my-image').croppie();
             <a name="options"></a>
             <div class="section-header"><h2>Usage</h2></div>
             <div class="container">
-                <p>You can initialize Croppie with the following code:</p>
+                <p>Initialize Croppie with vanilla JavaScript:</p>
                 
-              <pre class="language-javascript"><code class="language-javascript">var c = new Croppie(document.getElementById('item'), opts);
+              <pre class="language-javascript"><code class="language-javascript">var el = document.getElementById('item');
+var croppie = new Croppie(el, opts);
 // call a method
-c.method(args);</code></pre>
-            <p>Or you can use jquery</p>
-            <pre class="language-javascript"><code class="language-javascript">$('#item').croppie(opts);
-// call a method via jquery
-$('#item').croppie(method, args);</code></pre>
+croppie.method(args);</code></pre>
             </div>
         </section>
 
@@ -287,9 +289,11 @@ $('#item').croppie(method, args);</code></pre>
                             <strong class="focus">update(croppie)</strong><em>Croppie</em>
                             <p>Triggered when a drag or zoom occurs</p>
                             <pre class="language-javascript"><code class="language-javascript">
-$('.my-croppie').on('update.croppie', function(ev, cropData) {});
-// or
-document.getElementById('another-croppie').addEventListener('update', function(ev) { var cropData = ev.detail; });
+var el = document.getElementById('my-croppie');
+el.addEventListener('update', function(ev) { 
+    var cropData = ev.detail;
+    // do something with crop data
+});
                             </code></pre>
                         </li>
                     </ul>
@@ -308,18 +312,19 @@ document.getElementById('another-croppie').addEventListener('update', function(e
                         <div class="col-1-2">
                             <strong>Basic Example</strong>
                           <pre class="language-javascript"><code class="language-javascript">
-var basic = $('#demo-basic').croppie({
+var el = document.getElementById('demo-basic');
+var basic = new Croppie(el, {
     viewport: {
         width: 150,
         height: 200
     }
 });
-basic.croppie('bind', {
+basic.bind({
     url: 'demo/cat.jpg',
     points: [77,469,280,739]
 });
 //on button click
-basic.croppie('result', 'html').then(function(html) {
+basic.result('html').then(function(html) {
     // html is div (overflow hidden)
     // with img positioned inside.
 });</code></pre>
@@ -405,7 +410,8 @@ resize.result('blob').then(function(blob) {
                         <div class="col-1-2">
                             <strong>Upload Example (with exif orientation compatability)</strong>
                             <pre class="language-javascript"><code class="language-javascript">
-$uploadCrop = $('#upload-demo').croppie({
+var el = document.getElementById('upload-demo');
+var uploadCrop = new Croppie(el, {
     enableExif: true,
     viewport: {
         width: 200,
@@ -444,7 +450,10 @@ $uploadCrop = $('#upload-demo').croppie({
                             <p>When binding a croppie element that isn't visible, i.e., in a modal - you'll need to call bind again on your croppie element, to indicate to croppie that the position has changed and it needs to recalculate its points.</p>
 
                             <pre class="language-javascript"><code class="language-javascript">
-$('#hidden-demo').croppie('bind')</code></pre>
+var el = document.getElementById('hidden-demo');
+var hiddenCrop = new Croppie(el);
+// later when modal is shown
+hiddenCrop.bind();</code></pre>
                             <div class="actions">
                                 <button class="show-hidden">Toggle Croppie</button>
                             </div>
@@ -471,9 +480,11 @@ $('#hidden-demo').croppie('bind')</code></pre>
                     <h3>Visibility and Binding</h3>
                     <p>Croppie is dependent on it's container being visible when the <a href="#bind">bind</a> method is called.  This can be an issue when your croppie component is inside a modal that isn't shown. Let's take the bootstrap modal for example..</p>
                     <pre class="language-javascript"><code class="language-javascript">
-var myCroppie = $('#my-croppie').croppie(opts);
-$('#my-modal').on('shown.bs.modal', function(){ 
-    myCroppie.croppie('bind', bindOpts);
+var el = document.getElementById('my-croppie');
+var myCroppie = new Croppie(el, opts);
+var modal = document.getElementById('my-modal');
+modal.addEventListener('shown.bs.modal', function(){ 
+    myCroppie.bind(bindOpts);
 });
                     </code></pre>
                     <p>If you are having issues getting the correct crop result, and your croppie instance is shown inside of a modal, try taking your croppie out of the modal and see if your issues persist.  If they don't, then make sure that your bind method is called after the modal is done animating.</p>
@@ -520,14 +531,11 @@ $('#my-modal').on('shown.bs.modal', function(){
         <footer>
             Copyright &copy; <span id="year">2017</span> | Foliotek
         </footer>
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-        <script>window.jQuery || document.write('<script src="bower_components/jquery/dist/jquery.min.js"><\/script>')</script>
         <script src="demo/prism.js"></script>
         <script src="bower_components/sweetalert/dist/sweetalert.min.js"></script>
-
+        <script src="bower_components/exif-js/exif.js"></script>
         <script src="croppie.js"></script>
         <script src="demo/demo.js"></script>
-        <script src="bower_components/exif-js/exif.js"></script>
         <script>
             document.getElementById('year').innerHTML = (new Date).getFullYear();
             Demo.init();
