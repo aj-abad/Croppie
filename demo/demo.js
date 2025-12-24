@@ -1,12 +1,12 @@
 var Demo = (function() {
 
 	function output(node) {
-		var existing = $('#result .croppie-result');
-		if (existing.length > 0) {
-			existing[0].parentNode.replaceChild(node, existing[0]);
+		var existing = document.querySelector('#result .croppie-result');
+		if (existing) {
+			existing.parentNode.replaceChild(node, existing);
 		}
 		else {
-			$('#result')[0].appendChild(node);
+			document.getElementById('result').appendChild(node);
 		}
 	}
 
@@ -25,18 +25,18 @@ var Demo = (function() {
 			allowOutsideClick: true
 		});
 		setTimeout(function(){
-			$('.sweet-alert').css('margin', function() {
-				var top = -1 * ($(this).height() / 2),
-					left = -1 * ($(this).width() / 2);
-
-				return top + 'px 0 0 ' + left + 'px';
-			});
+			var alert = document.querySelector('.sweet-alert');
+			if (alert) {
+				var top = -1 * (alert.offsetHeight / 2);
+				var left = -1 * (alert.offsetWidth / 2);
+				alert.style.margin = top + 'px 0 0 ' + left + 'px';
+			}
 		}, 1);
 	}
 
 	function demoMain () {
-		var mc = $('#cropper-1');
-		mc.croppie({
+		var el = document.getElementById('cropper-1');
+		var mc = new Croppie(el, {
 			viewport: {
 				width: 150,
 				height: 150,
@@ -50,11 +50,11 @@ var Demo = (function() {
 			// enforceBoundary: false
 			// mouseWheelZoom: false
 		});
-		mc.on('update.croppie', function (ev, data) {
-			// console.log('jquery update', ev, data);
+		el.addEventListener('update', function (ev) {
+			// console.log('update', ev.detail);
 		});
-		$('.js-main-image').on('click', function (ev) {
-            mc.croppie('result', {
+		document.querySelector('.js-main-image').addEventListener('click', function (ev) {
+            mc.result({
 				type: 'rawcanvas',
 				circle: true,
 				// size: { width: 300, height: 300 },
@@ -68,9 +68,10 @@ var Demo = (function() {
 	}
 
 	function demoBasic() {
-		var $w = $('.basic-width'),
-			$h = $('.basic-height'),
-			basic = $('#demo-basic').croppie({
+		var wInput = document.querySelector('.basic-width');
+		var hInput = document.querySelector('.basic-height');
+		var el = document.getElementById('demo-basic');
+		var basic = new Croppie(el, {
 			viewport: {
 				width: 150,
 				height: 200
@@ -80,19 +81,19 @@ var Demo = (function() {
 				height: 300
 			}
 		});
-		basic.croppie('bind', {
+		basic.bind({
 			url: 'demo/cat.jpg',
 			points: [77,469,280,739]
 		});
 
-		$('.basic-result').on('click', function() {
-			var w = parseInt($w.val(), 10),
-				h = parseInt($h.val(), 10),s
-				size = 'viewport';
+		document.querySelector('.basic-result').addEventListener('click', function() {
+			var w = parseInt(wInput.value, 10);
+			var h = parseInt(hInput.value, 10);
+			var size = 'viewport';
 			if (w || h) {
 				size = { width: w, height: h };
 			}
-			basic.croppie('result', {
+			basic.result({
 				type: 'canvas',
 				size: size,
 				resultSize: {
@@ -133,9 +134,12 @@ var Demo = (function() {
 			});
 		});
 
-		$('.vanilla-rotate').on('click', function(ev) {
-			vanilla.rotate(parseInt($(this).data('deg')));
-		});
+		var rotateButtons = document.querySelectorAll('.vanilla-rotate');
+		for (var i = 0; i < rotateButtons.length; i++) {
+			rotateButtons[i].addEventListener('click', function(ev) {
+				vanilla.rotate(parseInt(this.getAttribute('data-deg')));
+			});
+		}
 	}
 
     function demoResizer() {
@@ -167,18 +171,18 @@ var Demo = (function() {
 	}
 
 	function demoUpload() {
-		var $uploadCrop;
+		var uploadCrop;
 
 		function readFile(input) {
  			if (input.files && input.files[0]) {
 	            var reader = new FileReader();
 	            
 	            reader.onload = function (e) {
-					$('.upload-demo').addClass('ready');
-	            	$uploadCrop.croppie('bind', {
+					document.querySelector('.upload-demo').classList.add('ready');
+	            	uploadCrop.bind({
 	            		url: e.target.result
 	            	}).then(function(){
-	            		console.log('jQuery bind complete');
+	            		console.log('bind complete');
 	            	});
 	            	
 	            }
@@ -190,7 +194,8 @@ var Demo = (function() {
 		    }
 		}
 
-		$uploadCrop = $('#upload-demo').croppie({
+		var el = document.getElementById('upload-demo');
+		uploadCrop = new Croppie(el, {
 			viewport: {
 				width: 100,
 				height: 100,
@@ -199,9 +204,9 @@ var Demo = (function() {
 			enableExif: true
 		});
 
-		$('#upload').on('change', function () { readFile(this); });
-		$('.upload-result').on('click', function (ev) {
-			$uploadCrop.croppie('result', {
+		document.getElementById('upload').addEventListener('change', function () { readFile(this); });
+		document.querySelector('.upload-result').addEventListener('click', function (ev) {
+			uploadCrop.result({
 				type: 'canvas',
 				size: 'viewport'
 			}).then(function (resp) {
@@ -213,9 +218,8 @@ var Demo = (function() {
 	}
 
 	function demoHidden() {
-		var $hid = $('#hidden-demo');
-
-		$hid.croppie({
+		var el = document.getElementById('hidden-demo');
+		var hiddenCrop = new Croppie(el, {
 			viewport: {
 				width: 175,
 				height: 175,
@@ -226,23 +230,26 @@ var Demo = (function() {
 				height: 200
 			}
 		});
-		$hid.croppie('bind', 'demo/demo-3.jpg');
-		$('.show-hidden').on('click', function () {
-			$hid.toggle();
-			$hid.croppie('bind');
+		hiddenCrop.bind('demo/demo-3.jpg');
+		document.querySelector('.show-hidden').addEventListener('click', function () {
+			el.style.display = el.style.display === 'none' ? '' : 'none';
+			hiddenCrop.bind();
 		});
 	}
 
 	function bindNavigation () {
-		var $html = $('html');
-		$('nav a').on('click', function (ev) {
-			var lnk = $(ev.currentTarget),
-				href = lnk.attr('href'),
-				targetTop = $('a[name=' + href.substring(1) + ']').offset().top;
-
-			$html.animate({ scrollTop: targetTop });
-			ev.preventDefault();
-		});
+		var navLinks = document.querySelectorAll('nav a');
+		for (var i = 0; i < navLinks.length; i++) {
+			navLinks[i].addEventListener('click', function (ev) {
+				var href = this.getAttribute('href');
+				var target = document.querySelector('a[name="' + href.substring(1) + '"]');
+				if (target) {
+					var targetTop = target.getBoundingClientRect().top + window.pageYOffset;
+					window.scrollTo({ top: targetTop, behavior: 'smooth' });
+				}
+				ev.preventDefault();
+			});
+		}
 	}
 
 	function init() {
