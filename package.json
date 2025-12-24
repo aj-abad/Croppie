@@ -1,6 +1,6 @@
 {
   "name": "croppie-constrained",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "A modernized TypeScript image cropper - fork of Croppie with ES modules, no jQuery, and modern browser support",
   "main": "./dist/croppie.cjs",
   "module": "./dist/croppie.mjs",
