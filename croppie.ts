@@ -1351,22 +1351,20 @@ function _bind(options, cb) {
 const fix = (v, decimalPoints) => parseFloat(v).toFixed(decimalPoints || 0);
 
 function _get() {
-  const self = this;
-  const imgData = self.elements.preview.getBoundingClientRect();
-  const vpData = self.elements.viewport.getBoundingClientRect();
-  let x1 = vpData.left - imgData.left;
-  let y1 = vpData.top - imgData.top;
-  const widthDiff = (vpData.width - self.elements.viewport.offsetWidth) / 2; //border
-  const heightDiff = (vpData.height - self.elements.viewport.offsetHeight) / 2;
-  let x2 = x1 + self.elements.viewport.offsetWidth + widthDiff;
-  let y2 = y1 + self.elements.viewport.offsetHeight + heightDiff;
-  let scale = self._currentZoom;
+  var self = this,
+    imgData = self.elements.preview.getBoundingClientRect(),
+    vpData = self.elements.viewport.getBoundingClientRect(),
+    x1 = vpData.left - imgData.left,
+    y1 = vpData.top - imgData.top,
+    x2 = x1 + vpData.width,
+    y2 = y1 + vpData.height,
+    scale = self._currentZoom;
 
   if (scale === Infinity || isNaN(scale)) {
     scale = 1;
   }
 
-  const max = self.options.enforceBoundary ? 0 : Number.NEGATIVE_INFINITY;
+  var max = self.options.enforceBoundary ? 0 : Number.NEGATIVE_INFINITY;
   x1 = Math.max(max, x1 / scale);
   y1 = Math.max(max, y1 / scale);
   x2 = Math.max(max, x2 / scale);
