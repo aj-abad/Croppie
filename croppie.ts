@@ -1059,7 +1059,7 @@ function _updatePropertiesFromImage() {
 function _updateZoomLimits(initial) {
   const self = this;
   let minZoom = Math.max(self.options.minZoom, 0) || 0;
-  const maxZoom = self.options.maxZoom || 5.0;
+  let maxZoom = self.options.maxZoom || 5.0;
   let initialZoom, defaultInitialZoom;
   const zoomer = self.elements.zoomer;
   const scale = parseFloat(zoomer.value);
