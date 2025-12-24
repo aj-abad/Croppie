@@ -1,7 +1,7 @@
 {
-  "name": "croppie",
-  "version": "2.6.5",
-  "description": "A simple javascript image cropper",
+  "name": "croppie-constrained",
+  "version": "3.0.0",
+  "description": "A modernized TypeScript image cropper - fork of Croppie with ES modules, no jQuery, and modern browser support",
   "main": "./dist/croppie.cjs",
   "module": "./dist/croppie.mjs",
   "exports": {
@@ -9,6 +9,7 @@
       "import": "./dist/croppie.mjs",
       "require": "./dist/croppie.cjs"
     },
+    "./croppie.css": "./croppie.css",
     "./dist/croppie.css": "./croppie.css"
   },
   "types": "./dist/croppie.d.ts",
@@ -35,7 +36,11 @@
     "crop",
     "cropper",
     "image",
-    "cropping"
+    "cropping",
+    "typescript",
+    "es-modules",
+    "modern",
+    "vanilla-js"
   ],
   "authors": [
     "Dustin Smith <thedustinsmith@gmail.com>",
