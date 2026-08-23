@@ -5,8 +5,10 @@
  * Version: 2.6.5
  *************************/
 
+// @ts-nocheck -- compatibility core; the Vue component is the typed public API.
+
 // Type definitions
-interface CroppieOptions {
+export interface CroppieOptions {
   viewport?: {
     width?: number;
     height?: number;
@@ -45,20 +47,20 @@ interface CroppieOptions {
   update?: (data: CroppieResult) => void;
 }
 
-interface CroppieBindOptions {
+export interface CroppieBindOptions {
   url?: string;
   points?: number[];
   zoom?: number;
   orientation?: number;
 }
 
-interface CroppieResult {
+export interface CroppieResult {
   points: string[];
   zoom: number;
   orientation: number;
 }
 
-interface CroppieResultOptions {
+export interface CroppieResultOptions {
   type?: "base64" | "html" | "blob" | "rawcanvas" | "canvas" | "points";
   size?: "viewport" | "original" | { width?: number; height?: number };
   format?: "jpeg" | "png" | "webp";
@@ -86,6 +88,15 @@ interface CroppieData {
   boundZoom?: number | null;
   points?: number[];
   orientation?: number;
+}
+
+interface LayoutRect {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+  height: number;
 }
 
 const EXIF_NORM: number[] = [1, 8, 3, 6];
@@ -294,6 +305,57 @@ class TransformOrigin {
     return `${this.x}px ${this.y}px`;
   }
 }
+
+/**
+ * Geometry in the cropper's own layout coordinate space.
+ *
+ * `getBoundingClientRect()` includes transforms on every ancestor. That made a
+ * cropper bound while a dialog was scaling in report smaller dimensions than
+ * the same cropper after the transition. These helpers intentionally use
+ * layout metrics so mounting under an in-flight transform is deterministic.
+ */
+const getBoundaryRect = (boundary: HTMLElement): LayoutRect => ({
+  top: 0,
+  right: boundary.clientWidth,
+  bottom: boundary.clientHeight,
+  left: 0,
+  width: boundary.clientWidth,
+  height: boundary.clientHeight,
+});
+
+const getViewportRect = (viewport: HTMLElement): LayoutRect => {
+  const left = viewport.offsetLeft + viewport.clientLeft;
+  const top = viewport.offsetTop + viewport.clientTop;
+  const width = viewport.clientWidth;
+  const height = viewport.clientHeight;
+
+  return {
+    top,
+    right: left + width,
+    bottom: top + height,
+    left,
+    width,
+    height,
+  };
+};
+
+const getImageRect = (preview: HTMLElement): LayoutRect => {
+  const transform = Transform.parse(preview);
+  const origin = new TransformOrigin(preview);
+  const width = preview.offsetWidth * transform.scale;
+  const height = preview.offsetHeight * transform.scale;
+  const left = preview.offsetLeft + transform.x + origin.x * (1 - transform.scale);
+  const top = preview.offsetTop + transform.y + origin.y * (1 - transform.scale);
+
+  return {
+    top,
+    right: left + width,
+    bottom: top + height,
+    left,
+    width,
+    height,
+  };
+};
 
 interface ExifData {
   Orientation?: number;
@@ -512,7 +574,7 @@ function _initializeResize() {
       return;
     }
 
-    const overlayRect = self.elements.overlay.getBoundingClientRect();
+    const overlayRect = getImageRect(self.elements.preview);
 
     isDragging = true;
     originalX = ev.pageX;
@@ -626,6 +688,7 @@ function _initializeZoom() {
 
   addClass(wrap, "cr-slider-wrap");
   addClass(zoomer, "cr-slider");
+  wrap.hidden = !self.options.showZoomer;
   zoomer.type = "range";
   zoomer.step = "0.0001";
   zoomer.value = "1";
@@ -641,7 +704,7 @@ function _initializeZoom() {
     _onZoom.call(self, {
       value: parseFloat(zoomer.value),
       origin: new TransformOrigin(self.elements.preview),
-      viewportRect: self.elements.viewport.getBoundingClientRect(),
+      viewportRect: getViewportRect(self.elements.viewport),
       transform: Transform.parse(self.elements.preview),
     });
   };
@@ -685,7 +748,7 @@ function _initializeZoom() {
 function _onZoom(ui) {
   const self = this;
   const transform = ui ? ui.transform : Transform.parse(self.elements.preview);
-  const vpRect = ui ? ui.viewportRect : self.elements.viewport.getBoundingClientRect();
+  const vpRect = ui ? ui.viewportRect : getViewportRect(self.elements.viewport);
   const origin = ui ? ui.origin : new TransformOrigin(self.elements.preview);
 
   const applyCss = () => {
@@ -737,7 +800,7 @@ function _getVirtualBoundaries(viewport) {
   const vpHeight = viewport.height;
   const centerFromBoundaryX = self.elements.boundary.clientWidth / 2;
   const centerFromBoundaryY = self.elements.boundary.clientHeight / 2;
-  const imgRect = self.elements.preview.getBoundingClientRect();
+  const imgRect = getImageRect(self.elements.preview);
   const curImgWidth = imgRect.width;
   const curImgHeight = imgRect.height;
   const halfWidth = vpWidth / 2;
@@ -764,8 +827,8 @@ function _getVirtualBoundaries(viewport) {
 function _updateCenterPoint(rotate) {
   const self = this;
   const scale = self._currentZoom;
-  const data = self.elements.preview.getBoundingClientRect();
-  const vpData = self.elements.viewport.getBoundingClientRect();
+  const data = getImageRect(self.elements.preview);
+  const vpData = getViewportRect(self.elements.viewport);
   const transform = Transform.parse(self.elements.preview.style[CSS_TRANSFORM]);
   const pc = new TransformOrigin(self.elements.preview);
   const top = vpData.top - data.top + vpData.height / 2;
@@ -804,9 +867,11 @@ function _initDraggable() {
   const self = this;
   let isDragging = false;
   let originalX, originalY, originalDistance, vpRect, transform;
+  let pointerScaleX = 1;
+  let pointerScaleY = 1;
 
   const assignTransformCoordinates = (deltaX, deltaY) => {
-    const imgRect = self.elements.preview.getBoundingClientRect();
+    const imgRect = getImageRect(self.elements.preview);
     const top = transform.y + deltaY;
     const left = transform.x + deltaX;
 
@@ -847,7 +912,7 @@ function _initDraggable() {
 
       transform = Transform.parse(self.elements.preview);
       document.body.style[CSS_USERSELECT] = "none";
-      vpRect = self.elements.viewport.getBoundingClientRect();
+      vpRect = getViewportRect(self.elements.viewport);
       keyMove(movement);
     }
 
@@ -901,7 +966,10 @@ function _initDraggable() {
     window.addEventListener("mouseup", mouseUp);
     window.addEventListener("touchend", mouseUp);
     document.body.style[CSS_USERSELECT] = "none";
-    vpRect = self.elements.viewport.getBoundingClientRect();
+    vpRect = getViewportRect(self.elements.viewport);
+    const renderedBoundary = self.elements.boundary.getBoundingClientRect();
+    pointerScaleX = renderedBoundary.width / self.elements.boundary.offsetWidth || 1;
+    pointerScaleY = renderedBoundary.height / self.elements.boundary.offsetHeight || 1;
   };
 
   const mouseMove = (ev) => {
@@ -915,8 +983,8 @@ function _initDraggable() {
       pageY = touches.pageY;
     }
 
-    const deltaX = pageX - originalX;
-    const deltaY = pageY - originalY;
+    const deltaX = (pageX - originalX) / pointerScaleX;
+    const deltaY = (pageY - originalY) / pointerScaleY;
     const newCss: Record<string, string> = {};
 
     if (ev.type === "touchmove") {
@@ -970,14 +1038,13 @@ function _initDraggable() {
 function _updateOverlay() {
   if (!this.elements) return; // since this is debounced, it can be fired after destroy
   const self = this;
-  const boundRect = self.elements.boundary.getBoundingClientRect();
-  const imgData = self.elements.preview.getBoundingClientRect();
+  const imgData = getImageRect(self.elements.preview);
 
   css(self.elements.overlay, {
     width: `${imgData.width}px`,
     height: `${imgData.height}px`,
-    top: `${imgData.top - boundRect.top}px`,
-    left: `${imgData.left - boundRect.left}px`,
+    top: `${imgData.top}px`,
+    left: `${imgData.left}px`,
   });
 }
 const _debouncedOverlay = debounce(_updateOverlay, 500);
@@ -1028,7 +1095,10 @@ function _updatePropertiesFromImage() {
   cssReset["opacity"] = 1;
   css(img, cssReset);
 
-  imgData = self.elements.preview.getBoundingClientRect();
+  imgData = {
+    width: self.elements.preview.offsetWidth,
+    height: self.elements.preview.offsetHeight,
+  };
 
   self._originalImageWidth = imgData.width;
   self._originalImageHeight = imgData.height;
@@ -1063,9 +1133,9 @@ function _updateZoomLimits(initial) {
   let initialZoom, defaultInitialZoom;
   const zoomer = self.elements.zoomer;
   const scale = parseFloat(zoomer.value);
-  const boundaryData = self.elements.boundary.getBoundingClientRect();
+  const boundaryData = getBoundaryRect(self.elements.boundary);
   const imgData = naturalImageDimensions(self.elements.img, self.data.orientation);
-  const vpData = self.elements.viewport.getBoundingClientRect();
+  const vpData = getViewportRect(self.elements.viewport);
 
   if (self.options.enforceBoundary) {
     const minW = vpData.width / imgData.width;
@@ -1101,12 +1171,8 @@ function _bindPoints(points) {
   const self = this;
   const pointsWidth = points[2] - points[0];
   // pointsHeight = points[3] - points[1],
-  const vpData = self.elements.viewport.getBoundingClientRect();
-  const boundRect = self.elements.boundary.getBoundingClientRect();
-  const vpOffset = {
-    left: vpData.left - boundRect.left,
-    top: vpData.top - boundRect.top,
-  };
+  const vpData = getViewportRect(self.elements.viewport);
+  const vpOffset = { left: vpData.left, top: vpData.top };
   const scale = vpData.width / pointsWidth;
   const originTop = points[1];
   const originLeft = points[0];
@@ -1124,11 +1190,10 @@ function _bindPoints(points) {
 
 function _centerImage() {
   const self = this;
-  const imgDim = self.elements.preview.getBoundingClientRect();
-  const vpDim = self.elements.viewport.getBoundingClientRect();
-  const boundDim = self.elements.boundary.getBoundingClientRect();
-  const vpLeft = vpDim.left - boundDim.left;
-  const vpTop = vpDim.top - boundDim.top;
+  const imgDim = getImageRect(self.elements.preview);
+  const vpDim = getViewportRect(self.elements.viewport);
+  const vpLeft = vpDim.left;
+  const vpTop = vpDim.top;
   const w = vpLeft - (imgDim.width - vpDim.width) / 2;
   const h = vpTop - (imgDim.height - vpDim.height) / 2;
   const transform = new Transform(w, h, self._currentZoom);
@@ -1281,6 +1346,7 @@ function _replaceImage(img) {
 
 function _bind(options, cb) {
   const self = this;
+  const bindGeneration = ++self._bindGeneration;
   let url,
     points = [],
     zoom = null;
@@ -1307,10 +1373,14 @@ function _bind(options, cb) {
   self.data.boundZoom = zoom;
 
   return loadImage(url, hasExif).then((img) => {
+    if (bindGeneration !== self._bindGeneration || !self.elements) {
+      return;
+    }
+
     _replaceImage.call(self, img);
     if (!points.length) {
       const natDim = naturalImageDimensions(img);
-      const rect = self.elements.viewport.getBoundingClientRect();
+      const rect = getViewportRect(self.elements.viewport);
       const aspectRatio = rect.width / rect.height;
       const imgAspectRatio = natDim.width / natDim.height;
       let width, height;
@@ -1352,17 +1422,13 @@ const fix = (v, decimalPoints) => parseFloat(v).toFixed(decimalPoints || 0);
 
 function _get() {
   var self = this,
-    imgData = self.elements.preview.getBoundingClientRect(),
-    vpData = self.elements.viewport.getBoundingClientRect(),
+    imgData = getImageRect(self.elements.preview),
+    vpData = getViewportRect(self.elements.viewport),
     // Use clientWidth/clientHeight to get viewport dimensions without border
     vpContentWidth = self.elements.viewport.clientWidth,
     vpContentHeight = self.elements.viewport.clientHeight,
-    // Calculate border offsets (getBoundingClientRect includes border, but crop should be content only)
-    borderLeft = (vpData.width - vpContentWidth) / 2,
-    borderTop = (vpData.height - vpContentHeight) / 2,
-    // Adjust coordinates to account for border
-    x1 = (vpData.left + borderLeft) - imgData.left,
-    y1 = (vpData.top + borderTop) - imgData.top,
+    x1 = vpData.left - imgData.left,
+    y1 = vpData.top - imgData.top,
     x2 = x1 + vpContentWidth,
     y2 = y1 + vpContentHeight,
     scale = self._currentZoom;
@@ -1457,7 +1523,17 @@ function _result(options) {
 }
 
 function _refresh() {
+  if (!this.elements || !this.data.url) return;
+
+  if (this.data.bound) {
+    const current = _get.call(this);
+    this.data.points = current.points.map((point) => parseFloat(point));
+    this.data.boundZoom = current.zoom;
+    this.data.bound = false;
+  }
+
   _updatePropertiesFromImage.call(this);
+  _triggerUpdate.call(this);
 }
 
 function _rotate(deg) {
@@ -1484,6 +1560,8 @@ function _rotate(deg) {
 
 function _destroy() {
   const self = this;
+  self._bindGeneration++;
+  if (!self.elements) return;
   self.element.removeChild(self.elements.boundary);
   removeClass(self.element, "croppie-container");
   if (self.options.enableZoom) {
@@ -1500,6 +1578,7 @@ class Croppie {
   _currentZoom!: number;
   _originalImageWidth!: number;
   _originalImageHeight!: number;
+  _bindGeneration = 0;
 
   static defaults: CroppieOptions = {
     viewport: {
@@ -1617,22 +1696,6 @@ class Croppie {
 
   destroy(): void {
     return _destroy.call(this);
-  }
-}
-
-// Export for different module systems
-if (typeof module !== "undefined" && module.exports) {
-  // CommonJS
-  module.exports = Croppie;
-} else if (typeof define === "function" && (define as any).amd) {
-  // AMD
-  define([], function () {
-    return Croppie;
-  });
-} else {
-  // Browser global
-  if (typeof window !== "undefined") {
-    window.Croppie = Croppie;
   }
 }
 

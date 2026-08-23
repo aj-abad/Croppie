@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
+    "jsx": "preserve",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "noUnusedLocals": true,
@@ -19,13 +20,6 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [
-    "croppie.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "test",
-    "demo"
-  ]
+  "include": ["*.ts", "*.vue"],
+  "exclude": ["node_modules", "dist", "test", "demo"]
 }

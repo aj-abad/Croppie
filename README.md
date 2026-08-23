@@ -1,56 +1,76 @@
-# Croppie - A Javascript Image Cropper
+# Croppie
 
+A headless Vue 3 image cropper. Croppie owns image geometry and output; the consuming app owns the dialog, buttons, slider, and every other piece of presentation.
 
-## To Install
-Bower: `bower install croppie`
+## Install
 
-Npm: `npm install croppie`
-
-Download:
-[croppie.js](croppie.js) & [croppie.css](croppie.css)
-
-## Adding croppie to your site
-```html
-<link rel="stylesheet" href="croppie.css" />
-<script src="croppie.js"></script>
+```sh
+npm install croppie-constrained
 ```
 
-## CDN
-cdnjs.com provides croppie via cdn https://cdnjs.com/libraries/croppie
+Import the component and its structural stylesheet.
+
+```vue
+<script setup lang="ts">
+import { shallowRef, useTemplateRef } from "vue";
+import Croppie from "croppie-constrained";
+import "croppie-constrained/croppie.css";
+
+const source = shallowRef<string | null>(null);
+const cropper = useTemplateRef<InstanceType<typeof Croppie>>("cropper");
+
+async function save() {
+  const blob = await cropper.value?.result({
+    type: "blob",
+    size: "viewport",
+    format: "png",
+  });
+}
+</script>
+
+<template>
+  <Croppie
+    ref="cropper"
+    v-slot="{ ready, normalizedZoom, setNormalizedZoom }"
+    :src="source"
+    :options="{
+      viewport: { width: 280, height: 280, type: 'square' },
+      enforceBoundary: true,
+      maxZoom: 2,
+    }"
+  >
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.0001"
+      :disabled="!ready"
+      :value="normalizedZoom"
+      @input="
+        setNormalizedZoom(Number(($event.target as HTMLInputElement).value))
+      "
+    />
+  </Croppie>
+</template>
 ```
-https://cdnjs.cloudflare.com/ajax/libs/croppie/{version}/croppie.min.css
-https://cdnjs.cloudflare.com/ajax/libs/croppie/{version}/croppie.min.js
+
+The default slot receives `ready`, the current crop `data`, actual and normalized zoom values, zoom limits, and setters. The component exposes `get`, `result`, `refresh`, `rotate`, `setZoom`, and `setNormalizedZoom` for imperative actions that do not fit props/events.
+
+Events:
+
+- `ready` after the current `src` has loaded and its first crop is stable.
+- `update` whenever the crop changes.
+- `error` when an image cannot be loaded.
+
+`CroppieCore` remains available as a named export for migrations from the old imperative API. New integrations should use the Vue component.
+
+## Transform-safe mounting
+
+Crop geometry uses layout coordinates rather than transformed viewport snapshots. A cropper can mount and bind once while an ancestor dialog is scaling or translating; it does not need a delayed second `bind()` after the opening animation.
+
+## Development
+
+```sh
+npm install
+npm test
 ```
-
-
-## Documentation
-[Documentation](http://foliotek.github.io/Croppie#documentation)
-
-## Related Libraries
-* [croppie-dart](https://gitlab.com/michel.werren/croppie-dart)
-* [ngCroppie](https://github.com/allenRoyston/ngCroppie)
-* [angular-croppie](https://github.com/lpsBetty/angular-croppie)
-* [django-croppie](https://github.com/dima-kov/django-croppie)
-* [vue-croppie](https://github.com/jofftiquez/vue-croppie)
-
-## Contributing
-First, thanks for contributing.  This project is difficult to maintain with one person.  Here's a "checklist" of things to remember when contributing to croppie.
-* Don't forget to update the documentation.
-* If you're adding a new option/event/method, try adding to an example on the documentation.  Or create a new example, if you feel the need.
-* We don't have tests for Croppie :( (if you want to create tests I'd be forever grateful), so please try to test the functionality you're changing on the demo page.  I've tried to add as many use-cases as I can think of on there.  Compare the functionality in your branch to the one on the official page.  If they all still work, then great!
-
-If you're looking for a simple server to load the demo page, I use https://github.com/tapio/live-server.
-
-#### Minifying
-`uglifyjs croppie.js -c -m -r '$,require,exports' -o croppie.min.js`
-
-#### Releasing a new version
-For the most part, you shouldn't worry about these steps unless you're the one handling the release.  Please don't bump the release and don't minify/uglify in a PR.  That just creates merge conflicts when merging.  Those steps will be performed when the release is created.
-1. Bump version in croppie.js
-2. Minify/Uglify
-3. Commit
-4. npm version [new version]
-5. `git push && git push --tags`
-6. `npm publish`
-7. Draft a new release with new tag on https://github.com/Foliotek/Croppie/releases
-8. Deploy to gh-pages `npm run deploy`

@@ -1,32 +1,39 @@
 {
-  "name": "croppie-constrained",
-  "version": "3.0.4",
-  "description": "A modernized TypeScript image cropper - fork of Croppie with ES modules, no jQuery, and modern browser support",
+  "name": "@arcon.mobi/nuxt-croppie",
+  "version": "4.0.0",
+  "description": "A headless Vue 3 image cropper with transform-safe geometry",
+  "type": "module",
   "main": "./dist/croppie.cjs",
   "module": "./dist/croppie.mjs",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/croppie.mjs",
       "require": "./dist/croppie.cjs"
     },
-    "./croppie.css": "./croppie.css",
-    "./dist/croppie.css": "./croppie.css"
+    "./core": {
+      "types": "./dist/croppie.d.ts",
+      "import": "./dist/croppie-core.mjs",
+      "require": "./dist/croppie-core.cjs"
+    },
+    "./croppie.css": "./dist/style.css",
+    "./dist/croppie.css": "./dist/style.css"
   },
-  "types": "./dist/croppie.d.ts",
+  "types": "./dist/index.d.ts",
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
     "@types/node": "^25.0.3",
-    "gh-pages": "^0.11.0",
-    "mocha": "2.4.5",
     "typescript": "^5.9.3",
-    "uglify-js": "3.3.15",
     "vite": "^5.4.21",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vue": "^3.5.40"
   },
   "scripts": {
-    "test": "mocha test/unit",
-    "deploy": "node deploy.js",
-    "build": "vite build",
-    "uglify": "uglifyjs croppie.js -c -m -r '$,require,exports' -o croppie.min.js"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "build": "vite build"
   },
   "repository": {
     "type": "git",
@@ -52,9 +59,6 @@
   },
   "homepage": "http://foliotek.github.io/Croppie",
   "files": [
-    "croppie.css",
-    "croppie.js",
-    "croppie.min.js",
     "dist"
   ]
 }
